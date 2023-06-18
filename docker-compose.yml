@@ -1,0 +1,38 @@
+version: '3.9'
+services:
+  order:
+    build:
+      context: .
+      dockerfile: Dockerfile.order
+    ports:
+      - "8088:8088"
+    environment:
+      - PORT=:8088
+      - ELASTIC_APM_SERVER_URL=${ELASTIC_APM_SERVER_URL}
+      - ELASTIC_APM_SECRET_TOKEN=${ELASTIC_APM_SECRET_TOKEN}
+      - ELASTIC_APM_SERVICE_NAME=order-service
+      - ELASTIC_APM_ENVIRONMENT=tracing-test
+      - ELASTIC_APM_LOG_FILE=stdout
+      - ELASTIC_APM_LOG_LEVEL=debug
+      - KAFKA_TOPIC=test-topic
+      - KAFKA_URL=kafka:29092
+      - PAYMENT_URL=http://payment:8089
+
+  payment:
+    build:
+      context: .
+      dockerfile: Dockerfile.payment
+    ports:
+      - "8089:8089"
+    environment:
+      - PORT=:8089
+      - ELASTIC_APM_SERVER_URL=${ELASTIC_APM_SERVER_URL}
+      - ELASTIC_APM_SECRET_TOKEN=${ELASTIC_APM_SECRET_TOKEN}
+      - ELASTIC_APM_SERVICE_NAME=payment-service
+      - ELASTIC_APM_ENVIRONMENT=tracing-test
+      - ELASTIC_APM_LOG_FILE=stdout
+      - ELASTIC_APM_LOG_LEVEL=debug
+      - KAFKA_TOPIC=test-topic
+      - KAFKA_URL=kafka:29092
+    depends_on:
+      - order
