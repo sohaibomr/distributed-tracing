@@ -109,7 +109,7 @@ func (o Order) processOrderWithError(ctx context.Context) error {
 	span.Context.SetLabel("order.id", o.ID)
 	span.Context.SetLabel("order.quantity", o.Quantity)
 	span.Context.SetLabel("order.name", o.Name)
-	defer span.End()
+	span.End()
 	o.ID = ""
 	return o.processPayment(ctx)
 }
@@ -128,10 +128,10 @@ func (o Order) processPayment(ctx context.Context) error {
 	resp, err := ctxhttp.Post(ctx, client, paymentSvcUrl, "application/json", bytes.NewBuffer(rawOrder))
 	if err != nil || resp.StatusCode != http.StatusOK {
 		apm.CaptureError(ctx, fmt.Errorf("error processing payment. response: %s %v", resp.Status, err)).Send()
-		return fmt.Errorf("error processing payment. response: %s %v", resp.Status, err)
+		err = fmt.Errorf("error processing payment. response: %s %v", resp.Status, err)
 	}
 	defer resp.Body.Close()
 	fmt.Println(resp.Status)
 	fmt.Println("Payment processed!")
-	return nil
+	return err
 }

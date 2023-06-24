@@ -22,14 +22,14 @@ func newTransaction(orderId string) transaction {
 }
 
 func (t transaction) processTransaction(ctx context.Context) error {
-	span, spanCtx := apm.StartSpan(ctx, "processTransaction", "custom")
+	span, sCtx := apm.StartSpan(ctx, "processTransaction", "custom")
 	span.Context.SetLabel("order_id", t.OrderID)
 	span.Context.SetLabel("transaction_id", t.TransactionId)
 	defer span.End()
 	fmt.Printf("Processing transaction for order %s \n", t.OrderID)
 	if t.OrderID == "" {
 		err := fmt.Errorf("error processing transaction. Order ID is empty")
-		apm.CaptureError(spanCtx, err).Send()
+		apm.CaptureError(sCtx, err).Send()
 		return err
 	}
 	return nil
