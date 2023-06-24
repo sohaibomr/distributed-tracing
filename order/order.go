@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/sohaibomr/distributed-tracing/logger"
 	"go.elastic.co/apm/module/apmhttp/v2"
+	"go.elastic.co/apm/module/apmzap/v2"
 	"go.elastic.co/apm/v2"
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -46,7 +48,8 @@ func randomOrderId() string {
 }
 
 func placeNewOrder(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Placing new order...")
+	traceContextFields := apmzap.TraceContext(r.Context())
+	logger.Log.With(traceContextFields...).Info("Placing new order...")
 	// get req args
 	errArg := r.URL.Query().Get("error")
 	orderNumber := randomInt()
@@ -54,7 +57,7 @@ func placeNewOrder(w http.ResponseWriter, r *http.Request) {
 	if errArg == "true" {
 		err := order.processOrderWithError(r.Context())
 		if err != nil {
-			fmt.Println(err)
+			logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error processing order: %s", err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
@@ -62,21 +65,21 @@ func placeNewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	err := order.processOrder(r.Context())
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error processing order: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("500 - Something bad happened!"))
 		return
 	}
 	err = order.processPayment(r.Context())
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error processing payment: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("500 - Something bad happened!"))
 		return
 	}
 	rawOrder, err := order.marshal()
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error marshalling order: %v", err))
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("500 - Something bad happened!"))
 		return
@@ -115,13 +118,15 @@ func (o Order) processOrderWithError(ctx context.Context) error {
 }
 
 func (o Order) processPayment(ctx context.Context) error {
-	fmt.Println("Processing payment...")
+	traceContextFields := apmzap.TraceContext(ctx)
+	logger.Log.With(traceContextFields...).Info("Processing payment...")
 	paymentSvcUrl := fmt.Sprintf("%s/payment", os.Getenv("PAYMENT_URL"))
 	// wrap http with apmoprions
 
 	client := apmhttp.WrapClient(&http.Client{})
 	rawOrder, err := o.marshal()
 	if err != nil {
+		logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error marshalling order: %v", err))
 		return err
 	}
 	// make post request with body
@@ -129,6 +134,7 @@ func (o Order) processPayment(ctx context.Context) error {
 	if err != nil || resp.StatusCode != http.StatusOK {
 		apm.CaptureError(ctx, fmt.Errorf("error processing payment. response: %s %v", resp.Status, err)).Send()
 		err = fmt.Errorf("error processing payment. response: %s %v", resp.Status, err)
+		logger.Log.With(traceContextFields...).Error(err.Error())
 	}
 	defer resp.Body.Close()
 	fmt.Println(resp.Status)

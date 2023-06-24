@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/sohaibomr/distributed-tracing/logger"
+	"go.elastic.co/apm/module/apmzap/v2"
 )
 
 type Order struct {
@@ -13,11 +16,12 @@ type Order struct {
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Processing payment...")
+	traceContextFields := apmzap.TraceContext(r.Context())
+	logger.Log.With(traceContextFields...).Info("Processing payment...")
 	item := Order{}
 	err := json.NewDecoder(r.Body).Decode(&item)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error decoding request body: %s", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
@@ -25,7 +29,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	trans := newTransaction(item.ID)
 	err = trans.processTransaction(r.Context())
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.With(traceContextFields...).Error(fmt.Sprintf("Error processing transaction: %s", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
