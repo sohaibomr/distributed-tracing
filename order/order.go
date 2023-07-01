@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/segmentio/kafka-go"
 	"github.com/sohaibomr/distributed-tracing/logger"
 	"go.elastic.co/apm/module/apmhttp/v2"
 	"go.elastic.co/apm/module/apmzap/v2"
@@ -84,8 +85,13 @@ func placeNewOrder(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("500 - Something bad happened!"))
 		return
 	}
+	kMsg := kafka.Message{
+		Key:   []byte("NEW_ORDER"),
+		Value: rawOrder,
+	}
+	writer.WriteMessages(r.Context(), kMsg)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(rawOrder))
+	w.Write(rawOrder)
 }
 
 func (o Order) marshal() ([]byte, error) {

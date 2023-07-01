@@ -7,13 +7,11 @@ WORKDIR /app
 
 COPY go.mod .
 COPY go.sum .
-
 RUN go mod download
 
-COPY payment /app/payment
+COPY notification /app/notification
 COPY logger /app/logger
 COPY apmkafkago /app/apmkafkago
+RUN cd /app/notification && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notification .
 
-RUN cd /app/payment && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o payment .
-
-ENTRYPOINT [ "./payment/payment" ]
+ENTRYPOINT [ "./notification/notification" ]
