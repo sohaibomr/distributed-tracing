@@ -15,7 +15,7 @@ services:
       - ELASTIC_APM_LOG_FILE=stdout
       - ELASTIC_APM_LOG_LEVEL=debug
       - PAYMENT_URL=http://payment:8089
-      - KAFKA_TOPIC=test-topic
+      - KAFKA_TOPIC=order-topic
       - KAFKA_BROKER_URL=kafka:29092
     depends_on:
       - kafka
@@ -34,8 +34,9 @@ services:
       - ELASTIC_APM_ENVIRONMENT=tracing-test
       - ELASTIC_APM_LOG_FILE=stdout
       - ELASTIC_APM_LOG_LEVEL=debug
-      - KAFKA_TOPIC=test-topic
-      - KAFKA_URL=kafka:29092
+      - KAFKA_TOPIC=order-topic
+      - KAFKA_PAYMENT_TOPIC=payment-topic
+      - KAFKA_BROKER_URL=kafka:29092
     depends_on:
       - order
 
@@ -84,7 +85,23 @@ services:
       - ELASTIC_APM_ENVIRONMENT=tracing-test
       - ELASTIC_APM_LOG_FILE=stdout
       - ELASTIC_APM_LOG_LEVEL=debug
-      - KAFKA_TOPIC=test-topic
+      - KAFKA_TOPIC=payment-topic
+      - KAFKA_BROKER_URL=kafka:29092
+    depends_on:
+      - kafka
+
+  report:
+    build:
+      context: .
+      dockerfile: Dockerfile.report
+    environment:
+      - ELASTIC_APM_SERVER_URL=${ELASTIC_APM_SERVER_URL}
+      - ELASTIC_APM_SECRET_TOKEN=${ELASTIC_APM_SECRET_TOKEN}
+      - ELASTIC_APM_SERVICE_NAME=report-service
+      - ELASTIC_APM_ENVIRONMENT=tracing-test
+      - ELASTIC_APM_LOG_FILE=stdout
+      - ELASTIC_APM_LOG_LEVEL=debug
+      - KAFKA_TOPIC=payment-topic
       - KAFKA_BROKER_URL=kafka:29092
     depends_on:
       - kafka

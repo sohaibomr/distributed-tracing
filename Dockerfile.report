@@ -1,0 +1,17 @@
+FROM golang:1.19-alpine3.16 as builder
+
+RUN apk update && apk add --no-cache
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY report /app/report
+COPY logger /app/logger
+COPY apmkafkago /app/apmkafkago
+RUN cd /app/report && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o report .
+
+ENTRYPOINT [ "./report/report" ]

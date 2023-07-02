@@ -15,7 +15,7 @@ func main() {
 	kReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{kafkaBrokers},
 		Topic:   topic,
-		GroupID: "notification-group",
+		GroupID: "report-group",
 	})
 	defer kReader.Close()
 	reader := apmkafkago.WrapReader(kReader)

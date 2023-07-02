@@ -26,5 +26,6 @@ func main() {
 	r := mux.NewRouter()
 	apmgorilla.Instrument(r)
 	r.HandleFunc("/order", placeNewOrder)
+	r.HandleFunc("/order/event", placeNewOrderEvent)
 	log.Fatal(http.ListenAndServe(os.Getenv("PORT"), r))
 }

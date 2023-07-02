@@ -17,6 +17,10 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
+const (
+	NewOrderEvent = "NEW_ORDER"
+)
+
 // get random integer in range 1 to 8
 func randomInt() int {
 	min := 1
